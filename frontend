@@ -1,58 +1,219 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Real-Time Process Dashboard</title>
+  <meta charset="UTF-8" />
+  <title>Real-Time Process Monitoring Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h2>CPU Usage</h2>
-  <canvas id="cpuChart"></canvas>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-circle">RT</div>
+        <div>
+          <h1 class="app-title">Process Monitor</h1>
+          <p class="app-subtitle">Real-time system insights</p>
+        </div>
+      </div>
 
-  <h2>Memory Usage</h2>
-  <div id="memory"></div>
+      <div class="sidebar-section">
+        <h2 class="sidebar-heading">Filters</h2>
+        <div class="filter-group">
+          <button class="filter-btn active" data-filter="all">All Processes</button>
+          <button class="filter-btn" data-filter="high-cpu">High CPU</button>
+          <button class="filter-btn" data-filter="high-mem">High Memory</button>
+          <button class="filter-btn" data-filter="stopped">Stopped</button>
+        </div>
+      </div>
 
-  <h2>Process List</h2>
-  <table border="1" id="procTable">
-    <tr>
-      <th>PID</th>
-      <th>Name</th>
-      <th>Status</th>
-      <th>CPU%</th>
-      <th>Mem%</th>
-      <th>Action</th>
-    </tr>
-  </table>
+      <div class="sidebar-section">
+        <h2 class="sidebar-heading">Search</h2>
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search by name or PID..."
+          />
+        </div>
+      </div>
 
-  <script>
-    async function loadData() {
-      const res = await fetch("/stats");
-      const data = await res.json();
+      <div class="sidebar-section">
+        <h2 class="sidebar-heading">Auto Refresh</h2>
+        <label class="switch">
+          <input type="checkbox" id="autoRefreshToggle" checked />
+          <span class="slider"></span>
+        </label>
+        <p class="hint-text">Updates every 2 seconds</p>
+      </div>
 
-      document.getElementById("memory").innerText = data.memory_usage + "%";
+      <footer class="sidebar-footer">
+        <p class="env-label">
+          Environment: <span id="envLabel">Simulation</span>
+        </p>
+        <p class="version-label">v1.0.0</p>
+      </footer>
+    </aside>
 
-      const table = document.getElementById("procTable");
-      table.innerHTML =
-        "<tr><th>PID</th><th>Name</th><th>Status</th><th>CPU%</th><th>Mem%</th><th>Action</th></tr>";
+    <!-- Main content -->
+    <main class="main">
+      <!-- Top bar -->
+      <header class="topbar">
+        <div>
+          <h2 class="topbar-title">Real-Time Overview</h2>
+          <p class="topbar-subtitle">
+            Monitor CPU, memory & process health in real time.
+          </p>
+        </div>
+        <div class="topbar-meta">
+          <div class="status-dot online"></div>
+          <span id="connectionStatus">Connected (Simulated)</span>
+          <span class="divider">•</span>
+          <span>Last update: <span id="lastUpdated">--:--:--</span></span>
+          <button id="refreshBtn" class="refresh-btn">Manual Refresh</button>
+        </div>
+      </header>
 
-      data.processes.forEach(p => {
-        table.innerHTML += `
-          <tr>
-            <td>${p.pid}</td>
-            <td>${p.name}</td>
-            <td>${p.status}</td>
-            <td>${p.cpu_percent}</td>
-            <td>${p.memory_percent}</td>
-            <td><button onclick="kill(${p.pid})">Kill</button></td>
-          </tr>`;
-      });
-    }
+      <!-- Summary cards -->
+      <section class="summary-grid">
+        <article class="summary-card">
+          <div class="summary-label">CPU Usage</div>
+          <div class="summary-value-row">
+            <span id="cpuUsageValue" class="summary-value">0%</span>
+            <span id="cpuTrend" class="summary-trend neutral">0.0%</span>
+          </div>
+          <div class="summary-subtext">Average across all processes</div>
+          <div class="progress-bar">
+            <div id="cpuUsageBar" class="progress-fill"></div>
+          </div>
+        </article>
 
-    async function kill(pid) {
-      await fetch("/kill/" + pid);
-      loadData();
-    }
+        <article class="summary-card">
+          <div class="summary-label">Memory Usage</div>
+          <div class="summary-value-row">
+            <span id="memUsageValue" class="summary-value">0%</span>
+            <span id="memTrend" class="summary-trend neutral">0.0%</span>
+          </div>
+          <div class="summary-subtext">
+            <span id="memDetails">0 / 0 GB</span>
+          </div>
+          <div class="progress-bar">
+            <div id="memUsageBar" class="progress-fill"></div>
+          </div>
+        </article>
 
-    setInterval(loadData, 2000);
-  </script>
+        <article class="summary-card">
+          <div class="summary-label">Total Processes</div>
+          <div class="summary-value-row">
+            <span id="processCount" class="summary-value">0</span>
+          </div>
+          <div class="summary-subtext">
+            Running: <span id="runningCount">0</span> • Sleeping:
+            <span id="sleepingCount">0</span> • Stopped:
+            <span id="stoppedCount">0</span>
+          </div>
+        </article>
 
+        <article class="summary-card">
+          <div class="summary-label">Alerts</div>
+          <div class="summary-value-row">
+            <span id="alertCount" class="summary-value">0</span>
+          </div>
+          <div class="summary-subtext">
+            CPU &gt; 80% or Memory &gt; 80%
+          </div>
+          <ul id="alertList" class="alert-list"></ul>
+        </article>
+      </section>
+
+      <!-- Charts -->
+      <section class="charts-grid">
+        <article class="chart-card">
+          <header class="chart-header">
+            <div>
+              <h3>CPU Usage (Last 60s)</h3>
+              <p class="chart-subtitle">Live CPU utilization history</p>
+            </div>
+            <div class="chart-meta">
+              <span class="legend-dot"></span>
+              <span>CPU %</span>
+            </div>
+          </header>
+          <canvas id="cpuChart" class="chart-canvas"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <header class="chart-header">
+            <div>
+              <h3>Memory Usage (Last 60s)</h3>
+              <p class="chart-subtitle">Live memory utilization history</p>
+            </div>
+            <div class="chart-meta">
+              <span class="legend-dot"></span>
+              <span>Memory %</span>
+            </div>
+          </header>
+          <canvas id="memChart" class="chart-canvas"></canvas>
+        </article>
+      </section>
+
+      <!-- Process table -->
+      <section class="table-section">
+        <header class="table-header">
+          <div>
+            <h3>Process List</h3>
+            <p class="table-subtitle">
+              Click on headers to sort. Actions are simulated.
+            </p>
+          </div>
+          <div class="table-actions">
+            <select id="sortSelect">
+              <option value="cpu-desc">CPU (High → Low)</option>
+              <option value="cpu-asc">CPU (Low → High)</option>
+              <option value="mem-desc">Memory (High → Low)</option>
+              <option value="mem-asc">Memory (Low → High)</option>
+              <option value="name-asc">Name (A → Z)</option>
+              <option value="pid-asc">PID (Low → High)</option>
+            </select>
+          </div>
+        </header>
+
+        <div class="table-wrapper">
+          <table class="process-table">
+            <thead>
+              <tr>
+                <th>PID</th>
+                <th>Name</th>
+                <th>User</th>
+                <th>CPU %</th>
+                <th>Mem %</th>
+                <th>State</th>
+                <th>Started</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="processTableBody">
+              <!-- Rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Confirmation modal -->
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <h3 id="modalTitle">Confirm Action</h3>
+      <p id="modalMessage">Are you sure?</p>
+      <div class="modal-actions">
+        <button id="modalCancel" class="btn-secondary">Cancel</button>
+        <button id="modalConfirm" class="btn-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
