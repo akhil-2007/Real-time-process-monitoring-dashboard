@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <meta charset="UTF-8" />
   <title>Real-Time Process Monitoring Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -69,7 +72,7 @@
         </div>
         <div class="topbar-meta">
           <div class="status-dot online"></div>
-          <span id="connectionStatus">Connected (Simulated)</span>
+          <span id="connectionStatus">Connecting...</span>
           <span class="divider">•</span>
           <span>Last update: <span id="lastUpdated">--:--:--</span></span>
           <button id="refreshBtn" class="refresh-btn">Manual Refresh</button>
@@ -165,7 +168,7 @@
           <div>
             <h3>Process List</h3>
             <p class="table-subtitle">
-              Click on headers to sort. Actions are simulated.
+              Click on headers to sort. Actions are live.
             </p>
           </div>
           <div class="table-actions">
@@ -201,18 +204,6 @@
         </div>
       </section>
     </main>
-  </div>
-
-  <!-- Confirmation modal -->
-  <div id="modalBackdrop" class="modal-backdrop hidden">
-    <div class="modal">
-      <h3 id="modalTitle">Confirm Action</h3>
-      <p id="modalMessage">Are you sure?</p>
-      <div class="modal-actions">
-        <button id="modalCancel" class="btn-secondary">Cancel</button>
-        <button id="modalConfirm" class="btn-danger">Confirm</button>
-      </div>
-    </div>
   </div>
 
   <script src="app.js"></script>
